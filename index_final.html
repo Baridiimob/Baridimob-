@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>موقع بريدي موب</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      direction: rtl;
+      background: url('baridimob_background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 400px;
+      margin: 80px auto;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    #total {
+      background-color: #eee;
+      font-weight: bold;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      background-color: #2c7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .message {
+      margin-top: 15px;
+      font-weight: bold;
+      color: green;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h2>دفع عبر بريدي موب</h2>
+
+    <label>رقم RIP</label>
+    <input type="text" value="00799999002709037546" readonly>
+
+    <label>السعر (للوحدة)</label>
+    <input type="number" id="price" value="250" readonly>
+
+    <label>الكمية</label>
+    <input type="number" id="quantity" placeholder="أدخل الكمية" oninput="updateTotal()">
+
+    <label>السعر الكلي</label>
+    <input type="text" id="total" value="0 DA" readonly>
+
+    <label>بريد إيمايل</label>
+    <input type="email" id="email" placeholder="example@email.com">
+
+    <label>الوصل</label>
+    <input type="text" id="receipt" placeholder="رقم الوصل من بريدي موب">
+
+    <button onclick="submitForm()">إرسال</button>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <script>
+    function updateTotal() {
+      let quantity = document.getElementById("quantity").value;
+      let price = document.getElementById("price").value;
+      let total = quantity * price;
+      document.getElementById("total").value = total ? total + " DA" : "0 DA";
+    }
+
+    function submitForm() {
+      window.location.href = "processing.html";
+    }
+  </script>
+
+</body>
+</html>
