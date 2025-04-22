@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>تحويل بريدي موب</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Cairo', sans-serif;
+      direction: rtl;
+      padding: 20px;
+      background: #f9f9f9;
+    }
+    .container {
+      max-width: 500px;
+      margin: auto;
+      background: #fff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    h2 { text-align: center; color: #2c3e50; }
+    label { display: block; margin-top: 12px; font-weight: bold; color: #34495e; }
+    input, select, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 8px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      box-sizing: border-box;
+    }
+    input[readonly] { background: #f0f0f0; }
+    button {
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      font-weight: bold;
+      margin-top: 16px;
+      transition: background 0.3s;
+    }
+    button:hover { background-color: #219150; }
+    .summary {
+      margin-top: 20px;
+      padding: 15px;
+      border: 1px solid #ddd;
+      background: #fafafa;
+      border-radius: 8px;
+    }
+    .lang-switcher {
+      text-align: left;
+      margin-bottom: 10px;
+    }
+    .popup {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      display: none;
+    }
+    .popup-content {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+    }
+    .popup-content h3 {
+      margin-bottom: 15px;
+      color: #27ae60;
+    }
+    .popup-content button {
+      width: auto;
+      margin-top: 10px;
+      background: #2980b9;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="lang-switcher">
+    <select id="lang" onchange="changeLang()">
+      <option value="ar">العربية</option>
+      <option value="fr">Français</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+
+  <h2 data-txt="title">تحويل بريدي موب</h2>
+
+  <label data-txt="rib">ريب:</label>
+  <input type="text" value="00799999002709037546" readonly>
+
+  <label data-txt="currency">نوع العملة:</label>
+  <select id="currency">
+    <option value="255">أورو</option>
+    <option value="250">دولار</option>
+  </select>
+
+  <label data-txt="amount">الكمية:</label>
+  <input type="number" id="amount" placeholder="أدخل الكمية" oninput="calculateTotal()">
+
+  <label data-txt="total">المجموع:</label>
+  <input type="text" id="total" readonly>
+
+  <label data-txt="method">طريقة التحويل:</label>
+  <select id="method" onchange="updateExtraField()">
+    <option value="wise">وايز</option>
+    <option value="redotpay">ريدوت باي</option>
+    <option value="bank">تحويل بنكي</option>
+  </select>
+
+  <div id="extraField"></div>
+
+  <label data-txt="email">الإيميل:</label>
+  <input type="email" id="email">
+
+  <label data-txt="receipt">رقم الوصل:</label>
+  <input type="text" id="receipt">
+
+  <label data-txt="upload">رفع صورة الوصل (اختياري):</label>
+  <input type="file" id="receiptImage" accept="image/*">
+
+  <button onclick="showSummary()" data-txt="showSummary">عرض الملخص</button>
+  <div id="summary" class="summary" style="display:none;"></div>
+  <button id="confirmBtn" style="display:none;" onclick="confirmTransaction()" data-txt="confirm">تأكيد</button>
+</div>
+
+<div class="popup" id="popup">
+  <div class="popup-content">
+    <h3>تم تأكيد العملية بنجاح!</h3>
+    <button onclick="closePopup()">موافق</button>
+  </div>
+</div>
+
+<script>
+const translations = {
+  ar: {
+    title: "تحويل بريدي موب", rib: "ريب:", currency: "نوع العملة:", amount: "الكمية:", total: "المجموع:",
+    method: "طريقة التحويل:", email: "الإيميل:", receipt: "رقم الوصل:", upload: "رفع صورة الوصل (اختياري):",
+    showSummary: "عرض الملخص", confirm: "تأكيد"
+  },
+  fr: {
+    title: "Transfert BaridiMob", rib: "RIB:", currency: "Devise:", amount: "Montant:", total: "Total:",
+    method: "Méthode de transfert:", email: "Email:", receipt: "Numéro de reçu:", upload: "Télécharger le reçu (optionnel):",
+    showSummary: "Afficher le résumé", confirm: "Confirmer"
+  },
+  en: {
+    title: "BaridiMob Transfer", rib: "RIB:", currency: "Currency:", amount: "Amount:", total: "Total:",
+    method: "Transfer Method:", email: "Email:", receipt: "Receipt Number:", upload: "Upload Receipt (optional):",
+    showSummary: "Show Summary", confirm: "Confirm"
+  }
+};
+
+function changeLang() {
+  const lang = document.getElementById('lang').value;
+  document.querySelectorAll('[data-txt]').forEach(el => {
+    const key = el.getAttribute('data-txt');
+    el.innerText = translations[lang][key];
+  });
+}
+
+function calculateTotal() {
+  const amount = document.getElementById('amount').value;
+  const currencyRate = document.getElementById('currency').value;
+  document.getElementById('total').value = amount ? (amount * currencyRate) + ' دج' : '';
+}
+
+function updateExtraField() {
+  const method = document.getElementById('method').value;
+  let fieldHtml = '';
+  if (method === 'wise') {
+    fieldHtml = '<label>إيميل وايز:</label><input type="email" id="wiseEmail">';
+  } else if (method === 'redotpay') {
+    fieldHtml = '<label>RedotPay ID:</label><input type="text" id="redotId">';
+  } else if (method === 'bank') {
+    fieldHtml = '<label>اسم الحساب:</label><input type="text" id="bankName">';
+  }
+  document.getElementById('extraField').innerHTML = fieldHtml;
+}
+
+function showSummary() {
+  const amount = document.getElementById('amount').value;
+  const currency = document.getElementById('currency').options[document.getElementById('currency').selectedIndex].text;
+  const total = document.getElementById('total').value;
+  const method = document.getElementById('method').options[document.getElementById('method').selectedIndex].text;
+  const email = document.getElementById('email').value;
+  const receipt = document.getElementById('receipt').value;
+
+  let extraValue = '';
+  if (document.getElementById('wiseEmail')) {
+    extraValue = 'إيميل وايز: ' + document.getElementById('wiseEmail').value;
+  } else if (document.getElementById('redotId')) {
+    extraValue = 'RedotPay ID: ' + document.getElementById('redotId').value;
+  } else if (document.getElementById('bankName')) {
+    extraValue = 'اسم الحساب: ' + document.getElementById('bankName').value;
+  }
+
+  const summaryText = `
+    <strong>الملخص:</strong><br>
+    الكمية: ${amount}<br>
+    العملة: ${currency}<br>
+    المجموع: ${total}<br>
+    طريقة التحويل: ${method}<br>
+    ${extraValue}<br>
+    الإيميل: ${email}<br>
+    رقم الوصل: ${receipt}
+  `;
+
+  document.getElementById('summary').innerHTML = summaryText;
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('confirmBtn').style.display = 'inline-block';
+}
+
+
+function confirmTransaction() {
+  const amount = document.getElementById('amount').value;
+  const email = document.getElementById('email').value.trim();
+  const receipt = document.getElementById('receipt').value.trim();
+
+  // تحقق من الكمية
+  if (!amount || parseFloat(amount) <= 0) {
+    alert('الرجاء إدخال كمية صحيحة أكبر من 0.');
+    return;
+  }
+
+  // تحقق من البريد الإلكتروني
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    alert('الرجاء إدخال بريد إلكتروني صحيح.');
+    return;
+  }
+
+  // تحقق من رقم الوصل
+  if (!receipt) {
+    alert('الرجاء إدخال رقم الوصل.');
+    return;
+  }
+
+  // تحقق من الحقل الإضافي حسب طريقة التحويل
+  const method = document.getElementById('method').value;
+  if (method === 'wise') {
+    const wiseEmail = document.getElementById('wiseEmail');
+    if (!wiseEmail || wiseEmail.value.trim() === '') {
+      alert('الرجاء إدخال إيميل وايز.');
+      return;
+    }
+  } else if (method === 'redotpay') {
+    const redotId = document.getElementById('redotId');
+    if (!redotId || redotId.value.trim() === '') {
+      alert('الرجاء إدخال RedotPay ID.');
+      return;
+    }
+  } else if (method === 'bank') {
+    const bankName = document.getElementById('bankName');
+    if (!bankName || bankName.value.trim() === '') {
+      alert('الرجاء إدخال اسم الحساب.');
+      return;
+    }
+  }
+
+  // إذا كانت جميع الحقول صحيحة، أظهر النافذة
+  document.getElementById('popup').style.display = 'flex';
+}
+
+
+function closePopup() {
+  document.getElementById('popup').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
